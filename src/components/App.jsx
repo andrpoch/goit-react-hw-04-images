@@ -1,4 +1,4 @@
-import React, { Component } from 'react';
+import React, { useState,useEffect } from 'react';
 
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
@@ -8,94 +8,79 @@ import Button from './Button/Button';
 
 import fetchImages from '../services/api';
 
-class App extends Component {
-  state = {
-    modalContent: "",
-    searchQuery: "",
-    page: 1,
-    visibleImages: [],
-    isLoading: false,
-    openModal: false,
+export default function App() {
+  const [modalContent, setModalContent] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [visibleImages, setVisibleImages] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [openModal, setIsOpenModal] = useState(false);
+
+  useEffect(() => {
+    getData();
+  }, [searchQuery, page]);
+  useEffect(() => {
+    handleScroll();
+  });
+  const toggleModal = () => {
+    setIsOpenModal(!openModal);
   };
-  componentDidUpdate(prevProps, { searchQuery, page }) {
-    if (searchQuery !== this.state.searchQuery || page !== this.state.page) {
-      this.getData();
+  const toggleLoading = () => {
+    setIsLoading(!isLoading);
+  };
+  const handleChange = (query) => {
+    setSearchQuery(query);
+    setPage(1);
+    setVisibleImages([]);
+  };
+  const getData = () => {
+    if (searchQuery !== '' || page !== 1) {
+      fetchImages(searchQuery, page)
+        .then(({ hits }) => setVisibleImages([...visibleImages, ...hits]))
+        .then(handleScroll)
+        .catch((error) => console.log(error.message))
+        .finally(() => {
+        setIsLoading(false)
+      })
     }
-    this.handleScroll();
-  }
-  toggleModal = () => {
-    this.setState(({ openModal }) => ({ openModal: !openModal }));
   };
-  toggleLoading = () => {
-    this.setState(({ isLoading }) => ({ isLoading: !isLoading }));
+  const handleNext = () => {
+    toggleLoading()
+    setPage((prevState) => prevState + 1);
   };
-  handleChange = (query) => {
-    this.setState({
-      searchQuery: query,
-      page: 1,
-      visibleImages: [],
-    });
-  };
-  handleNext = () => {
-    this.setState(({ page }) => {
-      return {
-        page: page + 1,
-      };
-    })
-  };
-  handleScroll = () => {
+  const handleScroll = () => {
     window.scrollTo({
       top: document.documentElement.scrollHeight,
       behavior: "smooth",
     })
   };
-  modalContentSet = (itemId) => {
-    const { visibleImages } = this.state;
-    const element = visibleImages.find(({ id }) => id === itemId)
-  this.setState({ modalContent: element.largeImageURL });
+
+    const modalContentSet = (itemId) => {
+    const element = visibleImages.find(({ id }) => id === itemId);
+    setModalContent(element.largeImageURL);
   };
-  getData = () => {
-    const { searchQuery, page } = this.state;
-    this.toggleLoading();
-    fetchImages(searchQuery, page)
-      .then(({ hits }) => {
-        this.setState(({ visibleImages }) => {
-          return {
-            visibleImages: [...visibleImages, ...hits]
-          }
-        });
-      })
-      .catch((error) => console.log(error.message))
-      .finally(this.toggleLoading);
-  };
-  render() {
-      const { visibleImages, openModal, modalContent, isLoading, page } =
-        this.state;
-      const notLastPage = visibleImages.length / page === 12;
-      const btnEnable = visibleImages.length > 0 && !isLoading && notLastPage;
-    return (
+  const isNotLastPage = visibleImages.length / page === 12;
+  const btnEnable = visibleImages.length > 0 && !isLoading && isNotLastPage;
+  return (
       <>
-        <Searchbar onSubmit={this.handleChange} />
+        <Searchbar onSubmit={handleChange} />
      
          <>
             <ImageGallery
               images={visibleImages}
-              onClick={this.toggleModal}
-              onImgClick={this.modalContentSet}
+              onClick={toggleModal}
+              onImgClick={modalContentSet}
             />
 
               {openModal && (
                 <Modal content={modalContent}
-                onBackdrop={this.toggleModal}/>
+                onBackdrop={toggleModal}/>
               )}
-              {isLoading && <Loader />}
+              {isLoading && <Loader/>}
               {btnEnable && (
-                <Button name='Load more...' onPress={this.handleNext}/>
+                <Button name='Load more...' onPress={handleNext}/>
             )}
           </>
       </>
     );
-  }
-}
-    
-export default App;
+};

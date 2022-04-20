@@ -1,29 +1,16 @@
-import React, { Component } from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 import s from './ImageGallery.module.css';
 import ImageGalleryItem from 'components/ImageGalleryItem/ImageGalleryItem';
 
-class ImageGallery extends Component {
-  static propTypes = {
-    onClick: PropTypes.func.isRequired,
-    onImgClick: PropTypes.func.isRequired,
-    images: PropTypes.arrayOf(
-      PropTypes.shape({
-        id: PropTypes.number.isRequired,
-      })
-    ).isRequired,
-  };
-
-  handleOpenModal = (e) => {
+export default function ImageGallery({images,onImgClick, onClick}) {
+  const handleOpenModal = (e) => {
     if (e.target !== e.currentTarget) {
-      this.props.onClick();
+      onClick();
     }
   };
-
-  render() {
-    const { images, onImgClick } = this.props;
-    return (
-      <ul className={s.list} onClick={this.handleOpenModal}>
+  return (
+      <ul className={s.list} onClick={handleOpenModal}>
         {images &&
           images.map((image) => (
             <li key={image.id} className={s.item}>
@@ -32,7 +19,13 @@ class ImageGallery extends Component {
           ))}
       </ul>
     );
-  }
-}
-
-export default ImageGallery;
+};
+ImageGallery.propTypes = {
+  onClick: PropTypes.func.isRequired,
+  onImgClick: PropTypes.func.isRequired,
+  images: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.number.isRequired,
+    })
+  ).isRequired,
+};
